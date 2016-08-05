@@ -26,13 +26,21 @@ class ViewController: UIViewController {
         // data request
         let dataTask = session.dataTaskWithURL(weatherRequestURL!) { (data: NSData?, response: NSURLResponse?, error: NSError?) in
             
-            do {
-                //print("Task started")
-                
-                let weatherData = try NSJSONSerialization.JSONObjectWithData(data!, options: .MutableContainers) as! [String: AnyObject]
-                self.presentWeatherData(weatherData)
-            } catch {
-                print("JSON error: ", error)
+            if let _ = error {
+                print("Connection error!")
+                dispatch_async(dispatch_get_main_queue()){
+                    self.textView.text = "Connection error! Please check your internet!"
+                }
+            } else {
+            
+                do {
+                    //print("Task started")
+                    
+                    let weatherData = try NSJSONSerialization.JSONObjectWithData(data!, options: .MutableContainers) as! [String: AnyObject]
+                    self.presentWeatherData(weatherData)
+                } catch {
+                    print("JSON error: ", error)
+                }
             }
             
         }
