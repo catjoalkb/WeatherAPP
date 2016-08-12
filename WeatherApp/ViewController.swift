@@ -17,33 +17,33 @@ class ViewController: UIViewController {
     func getWeatherData(city: String) {
         // API Key and url
         let API_KEY = "1ebebcdbe10ee40ae73b48e8de648272"
-        let url = "http://api.openweathermap.org/data/2.5/weather?q=\(city)&units=metric&mode=json&APPID=\(API_KEY)"
+        let units = "metric"
+        let mode = "json"
+        let url = "http://api.openweathermap.org/data/2.5/weather?q=\(city)&units=\(units)&mode=\(mode)&APPID=\(API_KEY)"
         
-        // prepare for request
+        // create session and URL
         let session = NSURLSession.sharedSession()
         let weatherRequestURL = NSURL(string: url)
         
-        // data request
+        // create network request
         let dataTask = session.dataTaskWithURL(weatherRequestURL!) { (data: NSData?, response: NSURLResponse?, error: NSError?) in
             
-            if let _ = error {
-                print("Connection error!")
-                dispatch_async(dispatch_get_main_queue()){
-                    self.textView.text = "Connection error! Please check your internet!"
-                }
-            } else {
-            
-                do {
-                    //print("Task started")
-                    
-                    let weatherData = try NSJSONSerialization.JSONObjectWithData(data!, options: .MutableContainers) as! [String: AnyObject]
-                    self.presentWeatherData(weatherData)
-                } catch {
-                    print("JSON error: ", error)
-                }
+            // GUARD: no error
+            guard (error == nil) else {
+                let errorInfo = "Fail to get data from sever. You may need check your Internet access"
+                self.updateTextView(errorInfo)
+                return
             }
-            
+
+            do {
+                // Convert raw data into dictionary
+                let weatherData = try NSJSONSerialization.JSONObjectWithData(data!, options: .MutableContainers) as! [String: AnyObject]
+                self.presentWeatherData(weatherData)
+            } catch {
+                print("JSON convertion error: ", error)
+            }
         }
+
         dataTask.resume()
         
     }
@@ -58,16 +58,27 @@ class ViewController: UIViewController {
     
     // MARK: - Present weather data
     func presentWeatherData(weatherData: [String: AnyObject]) {
-        dispatch_async(dispatch_get_main_queue()){
-//            print(weatherData["weather"]![0])
-            
-            let weather = weatherData["weather"]![0]
-            let condition = weather["main"]!! as! String
-            let temp = weatherData["main"]!["temp"]!! 
-            let textToShow = "Weather: " + condition + "\n" + "\(temp)"
-            self.textView.text = textToShow
+        
+        guard let weather = weatherData["weather"]![0],
+            let condition = weather["main"]!,
+            let temp = weatherData["main"]!["temp"]! else {
+            return
         }
+        
+        
+        let textToShow = "Weather: \(condition) \n Temperature: \(temp)"
+        
+        updateTextView(textToShow)
 
+    }
+    
+    
+    // MARK: - Update TextView
+    private func updateTextView(string: String) {
+        // process in the main thread
+        dispatch_async(dispatch_get_main_queue()){
+            self.textView.text = string
+        }
     }
 
 
